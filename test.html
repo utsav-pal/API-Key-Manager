@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Key Manager - Quick Test</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 30px; color: #a78bfa; }
+        .card { background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .card h2 { color: #a78bfa; margin-bottom: 15px; font-size: 18px; }
+        input, button { width: 100%; padding: 12px; border-radius: 8px; border: none; margin-bottom: 10px; font-size: 14px; }
+        input { background: #334155; color: #e2e8f0; }
+        button { background: #7c3aed; color: white; cursor: pointer; font-weight: 600; }
+        button:hover { background: #6d28d9; }
+        button:disabled { background: #475569; cursor: not-allowed; }
+        .result { background: #0f172a; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }
+        .success { border-left: 4px solid #22c55e; }
+        .error { border-left: 4px solid #ef4444; }
+        .step { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .step-num { background: #7c3aed; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .check { color: #22c55e; }
+        label { display: block; margin-bottom: 5px; color: #94a3b8; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API Key Manager Test</h1>
+        
+        <!-- Step 0: API URL -->
+        <div class="card">
+            <h2>Your API URL</h2>
+            <input type="text" id="apiUrl" placeholder="https://your-app.up.railway.app" value="">
+            <button onclick="testHealth()">Test Connection</button>
+            <div id="healthResult" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Step 1: Register -->
+        <div class="card">
+            <div class="step"><span class="step-num">1</span><span>Register Admin</span></div>
+            <label>Email</label>
+            <input type="email" id="regEmail" placeholder="admin@example.com">
+            <label>Password</label>
+            <input type="password" id="regPassword" placeholder="password123">
+            <button onclick="register()">Register</button>
+            <div id="regResult" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Step 2: Login -->
+        <div class="card">
+            <div class="step"><span class="step-num">2</span><span>Login</span></div>
+            <label>Email</label>
+            <input type="email" id="loginEmail" placeholder="admin@example.com">
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="password123">
+            <button onclick="login()">Login & Get Token</button>
+            <div id="loginResult" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Step 3: Create API -->
+        <div class="card">
+            <div class="step"><span class="step-num">3</span><span>Create API Namespace</span></div>
+            <label>API Name</label>
+            <input type="text" id="apiName" placeholder="My Production API">
+            <button onclick="createApi()">Create API</button>
+            <div id="apiResult" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Step 4: Create Key -->
+        <div class="card">
+            <div class="step"><span class="step-num">4</span><span>Create API Key</span></div>
+            <label>Key Name</label>
+            <input type="text" id="keyName" placeholder="Customer Key">
+            <button onclick="createKey()">Create Key</button>
+            <div id="keyResult" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Step 5: Verify Key -->
+        <div class="card">
+            <div class="step"><span class="step-num">5</span><span>Verify Key</span></div>
+            <label>API Key to Verify</label>
+            <input type="text" id="verifyKey" placeholder="sk_live_xxx...">
+            <button onclick="verifyKey()">Verify Key</button>
+            <div id="verifyResult" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let token = '';
+        let apiId = '';
+        let createdKey = '';
+        
+        function getUrl() {
+            return document.getElementById('apiUrl').value.replace(/\/$/, '');
+        }
+        
+        async function showResult(id, data, isError = false) {
+            const el = document.getElementById(id);
+            el.style.display = 'block';
+            el.className = 'result ' + (isError ? 'error' : 'success');
+            el.textContent = JSON.stringify(data, null, 2);
+        }
+        
+        async function testHealth() {
+            try {
+                const res = await fetch(getUrl() + '/health');
+                const data = await res.json();
+                showResult('healthResult', data);
+            } catch (e) {
+                showResult('healthResult', { error: e.message }, true);
+            }
+        }
+        
+        async function register() {
+            try {
+                const res = await fetch(getUrl() + '/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('regEmail').value,
+                        password: document.getElementById('regPassword').value
+                    })
+                });
+                const data = await res.json();
+                showResult('regResult', data, !res.ok);
+                if (res.ok) {
+                    document.getElementById('loginEmail').value = document.getElementById('regEmail').value;
+                    document.getElementById('loginPassword').value = document.getElementById('regPassword').value;
+                }
+            } catch (e) {
+                showResult('regResult', { error: e.message }, true);
+            }
+        }
+        
+        async function login() {
+            try {
+                const res = await fetch(getUrl() + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('loginEmail').value,
+                        password: document.getElementById('loginPassword').value
+                    })
+                });
+                const data = await res.json();
+                showResult('loginResult', data, !res.ok);
+                if (data.access_token) {
+                    token = data.access_token;
+                }
+            } catch (e) {
+                showResult('loginResult', { error: e.message }, true);
+            }
+        }
+        
+        async function createApi() {
+            try {
+                const res = await fetch(getUrl() + '/v1/apis', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        name: document.getElementById('apiName').value || 'Test API'
+                    })
+                });
+                const data = await res.json();
+                showResult('apiResult', data, !res.ok);
+                if (data.id) {
+                    apiId = data.id;
+                }
+            } catch (e) {
+                showResult('apiResult', { error: e.message }, true);
+            }
+        }
+        
+        async function createKey() {
+            try {
+                const res = await fetch(getUrl() + '/v1/keys', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        api_id: apiId,
+                        name: document.getElementById('keyName').value || 'Test Key'
+                    })
+                });
+                const data = await res.json();
+                showResult('keyResult', data, !res.ok);
+                if (data.key) {
+                    createdKey = data.key;
+                    document.getElementById('verifyKey').value = createdKey;
+                }
+            } catch (e) {
+                showResult('keyResult', { error: e.message }, true);
+            }
+        }
+        
+        async function verifyKey() {
+            try {
+                const res = await fetch(getUrl() + '/v1/keys/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        key: document.getElementById('verifyKey').value
+                    })
+                });
+                const data = await res.json();
+                showResult('verifyResult', data, !res.ok);
+            } catch (e) {
+                showResult('verifyResult', { error: e.message }, true);
+            }
+        }
+    </script>
+</body>
+</html>
