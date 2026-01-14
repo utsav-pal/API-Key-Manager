@@ -6,19 +6,28 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 from app.config import settings
 
+# Get database URL and convert to async format
+db_url = settings.DATABASE_URL
+
+# Convert Railway's postgresql:// to postgresql+asyncpg://
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+elif db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+
 # Determine if using SQLite
-is_sqlite = settings.DATABASE_URL.startswith("sqlite")
+is_sqlite = db_url.startswith("sqlite")
 
 # Create async engine with appropriate settings
 if is_sqlite:
     engine = create_async_engine(
-        settings.DATABASE_URL,
+        db_url,
         echo=settings.DEBUG,
         connect_args={"check_same_thread": False}
     )
 else:
     engine = create_async_engine(
-        settings.DATABASE_URL,
+        db_url,
         echo=settings.DEBUG,
         pool_pre_ping=True,
         pool_size=5,
