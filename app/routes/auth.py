@@ -23,25 +23,36 @@ async def register(
     - **email**: Valid email address
     - **password**: Minimum 8 characters
     """
-    # Check if email already exists
-    result = await db.execute(select(User).where(User.email == data.email))
-    if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+    try:
+        # Check if email already exists
+        result = await db.execute(select(User).where(User.email == data.email))
+        if result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        
+        # Create user
+        user = User(
+            email=data.email,
+            password_hash=hash_password(data.password)
         )
-    
-    # Create user
-    user = User(
-        email=data.email,
-        password_hash=hash_password(data.password)
-    )
-    
-    db.add(user)
-    await db.flush()
-    await db.refresh(user)
-    
-    return user
+        
+        db.add(user)
+        await db.flush()
+        await db.refresh(user)
+        
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        print(f"Registration error: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
+        )
 
 
 @router.post("/login", response_model=Token)

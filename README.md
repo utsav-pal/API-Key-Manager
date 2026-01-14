@@ -2,7 +2,7 @@
 
 A self-hosted API key management service with full feature parity to Unkey.dev, designed for Railway deployment.
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/api-key-manager)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.com/deploy/api-key-manager)
 
 ---
 
